@@ -11,52 +11,56 @@ import {
 import { Event } from './event.entity';
 import { CreateEventDto } from './create-event.dto';
 import { UpdateEventDto } from './update-event.dto';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Controller('/events')
 export class EventsController {
-  private events: Event[] = [];
+  constructor(
+    @InjectRepository(Event)
+    private readonly repository: Repository<Event>,
+  ) {}
 
   @Get()
-  findAll() {
-    return this.events;
+  async findAll() {
+    return this.repository.find();
   }
 
   @Get(':id')
-  findOne(@Param('id') id) {
-    const event = this.events.find((ev) => ev.id === parseInt(id));
+  async findOne(@Param('id') id) {
+    const event = this.repository.findOneBy({ id });
     return event;
   }
 
   @Post()
-  create(@Body() input: CreateEventDto) {
+  async create(@Body() input: CreateEventDto) {
     const event = {
       ...input,
       when: new Date(input.when),
-      id: this.events.length + 1,
     };
-    this.events.push(event);
-    return event;
+    return await this.repository.save(event);
   }
 
   @Patch(':id')
-  update(@Body() input: UpdateEventDto, @Param('id') id) {
-    const index = this.events.findIndex((ev) => ev.id === parseInt(id));
-    if (index === -1) {
+  async update(@Body() input: UpdateEventDto, @Param('id') id) {
+    let event = await this.repository.findOneBy({ id });
+    if (!event) {
       const error = new Error('no event found');
       return error;
     }
-    this.events[index] = {
-      ...this.events[index],
-      ...input,
-      when: input.when ? new Date(input.when) : this.events[index].when,
-    };
 
-    return this.events[index];
+    event = {
+      ...event,
+      ...input,
+      when: input.when ? new Date(input.when) : event.when,
+    };
+    return await this.repository.save(event);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  remove(@Param('id') id) {
-    this.events = this.events.filter((ev) => ev.id !== parseInt(id));
+  async remove(@Param('id') id) {
+    const event = await this.repository.findOneBy({ id });
+    return await this.repository.remove(event);
   }
 }
