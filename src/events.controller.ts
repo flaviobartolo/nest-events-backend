@@ -8,8 +8,6 @@ import {
   Body,
   HttpCode,
   ParseIntPipe,
-  ValidationPipe,
-  UsePipes
 } from '@nestjs/common';
 import { Event } from './event.entity';
 import { CreateEventDto } from './create-event.dto';
@@ -44,23 +42,20 @@ export class EventsController {
       ],
       take: 2,
       order: {
-        id: 'DESC'
+        id: 'DESC',
       },
     });
   }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
-    console.log(typeof id)
+    console.log(typeof id);
     const event = this.repository.findOneBy({ id });
     return event;
   }
 
-  @UsePipes()
   @Post()
-  async create(
-    @Body(new ValidationPipe({groups: ['create']})) input: CreateEventDto
-  ){
+  async create(@Body() input: CreateEventDto) {
     const event = {
       ...input,
       when: new Date(input.when),
@@ -69,10 +64,7 @@ export class EventsController {
   }
 
   @Patch(':id')
-  async update(
-    @Body(new ValidationPipe({groups: ['update']})) input: UpdateEventDto, 
-    @Param('id') id
-  ){
+  async update(@Body() input: UpdateEventDto, @Param('id') id) {
     let event = await this.repository.findOneBy({ id });
     if (!event) {
       const error = new Error('no event found');
