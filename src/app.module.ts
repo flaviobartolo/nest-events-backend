@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { EventsController } from './events.controller';
+import { EventsController } from './events/events.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Event } from './event.entity';
+import { Event } from './events/event.entity';
+import { EventsModule } from './events/events.module';
+import { AppJapanService } from './app.japan.service';
+import { AppDummy } from './app.dummy';
 
 @Module({
   imports: [
@@ -17,9 +20,20 @@ import { Event } from './event.entity';
       entities: [Event],
       synchronize: true, // automatically updates the db schema when you change your entities without change migrations needed; useful in dev but be careful on prod
     }),
-    TypeOrmModule.forFeature([Event]),
+    EventsModule,
   ],
-  controllers: [AppController, EventsController],
-  providers: [AppService],
+  controllers: [AppController],
+  //providers: [AppService],
+  providers: [{
+    provide: AppService,
+    useClass: AppJapanService
+  }, {
+    provide: 'APP_NAME',
+    useValue: 'Nest Events Backend'
+  }, {
+    provide: 'MESSAGE',
+    inject: [AppDummy],
+    useFactory: (app) => `${app.dummy()} Factory!`
+  }, AppDummy]
 })
 export class AppModule {}
